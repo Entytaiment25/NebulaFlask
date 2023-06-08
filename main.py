@@ -13,7 +13,7 @@ def generate_secret_key():
 
 
 app = Flask(__name__, template_folder="templates")
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root@localhost/flask"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://name:password@localhost/db"
 app.config["SECRET_KEY"] = generate_secret_key()
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_HTTPONLY"] = True
