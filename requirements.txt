@@ -1,0 +1,8 @@
+flask
+flask_sqlalchemy
+argon2-cffi
+mysqlclient
+uvicorn
+gunicorn
+gevent
+asgiref
