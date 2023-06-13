@@ -6,3 +6,4 @@ uvicorn
 gunicorn
 gevent
 asgiref
+python-dotenv

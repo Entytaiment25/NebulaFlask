@@ -1,30 +1,38 @@
+import logging
 import os
 import re
 
 import asgiref.wsgi
 from argon2 import PasswordHasher
-from flask import Flask, redirect, render_template, request, session, url_for
+from dotenv import load_dotenv
+from flask import Flask, escape, redirect, render_template, request, session, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
+
+load_dotenv()
+
+env = os.getenv
 
 
 ## Generate a random secret key
 def generate_secret_key():
-    return os.urandom(24).hex()
+    if env("SECRET_KEY") is None or env("SECRET_KEY") == "":
+        return os.urandom(24).hex()
 
 
 app = Flask(__name__, template_folder="templates")
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://name:password@localhost/db"
+app.config["SQLALCHEMY_DATABASE_URI"] = env("DB_URI")  # Update the key name here
 app.config["SECRET_KEY"] = generate_secret_key()
-app.config["SESSION_COOKIE_SECURE"] = True
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SESSION_COOKIE_SECURE"] = env("SESSION_COOKIE_SECURE")
+app.config["SESSION_COOKIE_HTTPONLY"] = env("SESSION_COOKIE_HTTPONLY")
+app.config["SESSION_COOKIE_SAMESITE"] = env("SESSION_COOKIE_SAMESITE")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = env("SQLALCHEMY_TRACK_MODIFICATIONS")
 
 db = SQLAlchemy(app)
 ph = PasswordHasher()
 
 
-class User(db.Model):
+class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -50,7 +58,7 @@ def register():
             )
 
         ## Check if the username already exists
-        if User.query.filter_by(username=username).first() is not None:
+        if Users.query.filter_by(username=username).first() is not None:
             return render_template("register.html", error="Username already exists.")
 
         ## Password validation
@@ -64,11 +72,11 @@ def register():
         password_hash = ph.hash(password)
 
         ## Create a new user
-        new_user = User(username=username, password_hash=password_hash, name=name)
+        new_user = Users(username=username, password_hash=password_hash, name=name)
         db.session.add(new_user)
         db.session.commit()
 
-        app.logger.info(f"New user registered: {username}")
+        logging.getLogger().info(f"New user registered: {username}")
 
         return redirect(url_for("login"))
 
@@ -87,8 +95,12 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        ## Retrieve the user from the database
-        user = User.query.filter_by(username=username).first()
+        ## Retrieve the user from the database using parameterized query
+        user = (
+            Users.query.filter(text("username = :username"))
+            .params(username=username)
+            .first()
+        )
 
         if not user:
             return render_template("login.html", error="Invalid username or password.")
@@ -102,7 +114,7 @@ def login():
         ## Store the user's session
         session["username"] = user.username
 
-        app.logger.info(f"User logged in: {user.username}")
+        logging.getLogger().info(f"User logged in: {user.username}")
 
         return redirect(url_for("dashboard", username=user.username))
 
@@ -121,6 +133,7 @@ def dashboard(username):
 app = asgiref.wsgi.WsgiToAsgi(app)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host=env("HOST_IP"), port=int(env("HOST_PORT")))

@@ -17,7 +17,7 @@ This is a Flask application that provides user registration and login functional
 **1.** Install the required dependencies listed in the "Dependencies" section.
 
 ```bash
-pip install flask flask_sqlalchemy argon2-cffi mysqlclient uvicorn gunicorn gevent asgiref
+pip install flask flask_sqlalchemy argon2-cffi mysqlclient uvicorn gunicorn gevent asgiref python-dotenv
 ```
 
 or
