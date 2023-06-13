@@ -1,6 +1,0 @@
-CREATE TABLE user (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(256) NOT NULL,
-    name VARCHAR(100) NOT NULL
-);
